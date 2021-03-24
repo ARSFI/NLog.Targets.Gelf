@@ -1,24 +1,9 @@
 # NLog.Targets.Gelf
-Gelf4NLog is an [NLog] target implementation to push log messages to [GrayLog2]. It implements the [Gelf] specification and communicates with GrayLog server via UDP.
+NLog.Targets.Gelf is an [NLog] target implementation to push log messages to [GrayLog2]. It implements the [Gelf] specification and communicates with GrayLog server via UDP.
 
 ## History
-Code forked from https://github.com/akurdyukov/Gelf4NLog which is a fork from https://github.com/RickyKeane/Gelf4NLog who forked the origonal code from https://github.com/seymen/Gelf4NLog
+Code forked from https://github.com/ARSFI/NLog.Targets.Gelf
 
-## Versioning
-Until v1 is released on nuget we can't promise that we wont introduce breaking changes.
-
-## Solution
-Solution is comprised of 3 projects: *Target* is the actual NLog target implementation, *Tests* contains the unit tests for the NLog target, and *ConsoleRunner* is a simple console project created in order to demonstrate the library usage.
-## Usage
-Use Nuget:
-<!--- 
-```
-PM> Install-Package NLog.Targets.Gelf -Pre
-```
--->
-```
-PM> Install-Package NLog.Targets.Gelf
-```
 ### Configuration
 Here is a sample nlog configuration snippet:
 ```xml
@@ -62,28 +47,3 @@ Options are the following:
 * __facility:__ The graylog2 facility to send log messages
 * __sendLastFormatParameter:__ default false. If true last parameter of message format will be sent to graylog as separate field per property
 
-###Code
-```c#
-//excerpt from ConsoleRunner
-var eventInfo = new LogEventInfo
-				{
-					Message = comic.Title,
-					Level = LogLevel.Info,
-				};
-eventInfo.Properties.Add("Publisher", comic.Publisher);
-eventInfo.Properties.Add("ReleaseDate", comic.ReleaseDate);
-Logger.Log(eventInfo);
-```
-or alternatively for simple log messages
-```c#
-Logger.Info("Simple message {0}", value);
-```
-or alternatively for use of sendLastFormatParameter
-```c#
-Logger.Info(comic.Title, new { Publisher = comic.Publisher, ReleaseDate = comic.ReleaseDate });
-```
-will log Publisher and ReleaseDate as separate fields in Graylog
-
-[NLog]: http://nlog-project.org/
-[GrayLog2]: http://graylog2.org/
-[Gelf]: http://graylog2.org/about/gelf

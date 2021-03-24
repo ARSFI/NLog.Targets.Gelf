@@ -1,6 +1,3 @@
-using NLog;
-using Newtonsoft.Json.Linq;
-
 namespace NLog.Targets.Gelf
 {
     public class ConverterConstants

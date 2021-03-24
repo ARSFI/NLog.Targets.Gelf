@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
-using NLog;
 using Newtonsoft.Json.Linq;
 using System.Text;
+using NLog.Layouts;
 
 namespace NLog.Targets.Gelf
 {
@@ -13,10 +13,10 @@ namespace NLog.Targets.Gelf
         private const int ShortMessageMaxLength = 250;
         private const string GelfVersion = "1.0";
 
-        public JObject GetGelfJson(LogEventInfo logEventInfo, string facility)
+        public JObject GetGelfJson(LogEventInfo logEventInfo, string facility, Layout layout)
         {
             //Retrieve the formatted message from LogEventInfo
-            var logEventMessage = logEventInfo.FormattedMessage;
+            var logEventMessage = layout != null ? layout.Render(logEventInfo) : logEventInfo.FormattedMessage;
             if (logEventMessage == null) return null;
 
             //If we are dealing with an exception, pass exception properties to LogEventInfo properties

@@ -1,10 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using NLog;
-using NLog.Targets;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using NLog.Config;
-using System.Collections.Generic;
 using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -14,35 +12,24 @@ namespace NLog.Targets.Gelf
     [Target("Gelf")]
     public class GelfTarget : TargetWithLayout
     {
-        private Lazy<IPEndPoint> _lazyIpEndoint;
-        private Lazy<ITransport> _lazyITransport;
-        private string _facility;
-        private Uri _endpoint;
+        private readonly Lazy<IPEndPoint> _lazyIpEndpoint;
+        private readonly Lazy<ITransport> _lazyITransport;
 
         [Required]
-        public string Endpoint
-        {
-            get { return _endpoint.ToString(); }
-            set {  _endpoint = value != null ? new Uri(Environment.ExpandEnvironmentVariables(value)) : null; }
-        }
+        public Uri Endpoint { get; set; }
 
         [ArrayParameter(typeof(GelfParameterInfo), "parameter")]
         public IList<GelfParameterInfo> Parameters { get; private set; }
 
-        public string Facility
-        {
-            get { return _facility; }
-            set { _facility = value != null ? Environment.ExpandEnvironmentVariables(value) : null; }
-        }
-
+        public string Facility { get; set; }
         public bool SendLastFormatParameter { get; set; }
 
         public IConverter Converter { get; private set; }
         public IEnumerable<ITransport> Transports { get; private set; }
         public DnsBase Dns { get; private set; }
 
-        public GelfTarget() : this(new[]{new UdpTransport(new UdpTransportClient())}, 
-            new GelfConverter(), 
+        public GelfTarget() : this(new ITransport[] { new UdpTransport(new UdpTransportClient()), new TcpTransport(new TcpTransportClient()) },
+            new GelfConverter(),
             new DnsWrapper())
         {
         }
@@ -52,17 +39,17 @@ namespace NLog.Targets.Gelf
             Dns = dns;
             Transports = transports;
             Converter = converter;
-            this.Parameters = new List<GelfParameterInfo>();
-            _lazyIpEndoint = new Lazy<IPEndPoint>(() =>
+            Parameters = new List<GelfParameterInfo>();
+            _lazyIpEndpoint = new Lazy<IPEndPoint>(() =>
             {
-                var addresses = Dns.GetHostAddresses(_endpoint.Host);
+                var addresses = Dns.GetHostAddresses(Endpoint.Host);
                 var ip = addresses.FirstOrDefault(x => x.AddressFamily == AddressFamily.InterNetwork);
-
-                return new IPEndPoint(ip, _endpoint.Port);
+                if (ip == null) return null; 
+                return new IPEndPoint(ip, Endpoint.Port);
             });
             _lazyITransport = new Lazy<ITransport>(() =>
             {
-                return Transports.Single(x => x.Scheme.ToUpper() == _endpoint.Scheme.ToUpper());
+                return Transports.Single(x => x.Scheme.ToUpper() == Endpoint.Scheme.ToUpper());
             });
         }
 
@@ -73,7 +60,7 @@ namespace NLog.Targets.Gelf
 
         protected override void Write(LogEventInfo logEvent)
         {
-            foreach (var par in this.Parameters)
+            foreach (var par in Parameters)
             {
                 if (!logEvent.Properties.ContainsKey(par.Name))
                 {
@@ -85,15 +72,15 @@ namespace NLog.Targets.Gelf
 
             if (SendLastFormatParameter && logEvent.Parameters != null && logEvent.Parameters.Any())
             {
-                ///PromoteObjectPropertiesMarker used as property name to indicate that the value should be treated as a object 
-                ///whose proeprties should be mapped to additional fields in graylog 
+                //PromoteObjectPropertiesMarker used as property name to indicate that the value should be treated as a object 
+                //whose proeprties should be mapped to additional fields in graylog 
                 logEvent.Properties.Add(ConverterConstants.PromoteObjectPropertiesMarker, logEvent.Parameters.Last());
             }
 
-            var jsonObject = Converter.GetGelfJson(logEvent, Facility);
+            var jsonObject = Converter.GetGelfJson(logEvent, Facility, Layout);
             if (jsonObject == null) return;
             _lazyITransport.Value
-                .Send(_lazyIpEndoint.Value, jsonObject.ToString(Formatting.None, null));
+                .Send(_lazyIpEndpoint.Value, jsonObject.ToString(Formatting.None, null));
         }
     }
 }
