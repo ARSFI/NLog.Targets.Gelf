@@ -64,3 +64,4 @@ _ReSharper*/
 Deploy
 packages
 *.DotSettings
+/.vs/NLog.Targets.Gelf/DesignTimeBuild
